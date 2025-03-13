@@ -1,0 +1,65 @@
+import pandas as pd
+import numpy as np
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+# Load dataset (replace 'heart.csv' with the actual file if needed)
+data = pd.read_csv(r"C:\Users\erefa\OneDrive\Desktop\heart_disease\Heart Disease\dataset.csv")
+
+# Display first few rows of the dataset
+print("Dataset Preview:\n", data.head())
+
+# Define features and target variable
+X = data.drop(columns=['target'])  # Features (independent variables)
+y = data['target']  # Target (0 = Normal, 1 = Heart Disease)
+
+# Split data into training and testing sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale the features for better performance
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Train a Random Forest model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Evaluate the model
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Save the model and scaler for future use
+joblib.dump(model, "heart_disease_model.pkl")
+joblib.dump(scaler, "scaler.pkl")
+
+# Function to take user input and predict heart disease
+def predict_heart_disease():
+    print("\nEnter Patient Details:")
+    age = float(input("Age: "))
+    sex = int(input("Sex (0 = Female, 1 = Male): "))
+    cp = int(input("Chest Pain Type (1-4): "))
+    trestbps = float(input("Resting Blood Pressure: "))
+    chol = float(input("Serum Cholesterol: "))
+    fbs = int(input("Fasting Blood Sugar (0 = <120mg/dL, 1 = >120mg/dL): "))
+    restecg = int(input("Resting ECG Results (0-2): "))
+    thalach = float(input("Max Heart Rate Achieved: "))
+    exang = int(input("Exercise Induced Angina (0 = No, 1 = Yes): "))
+    oldpeak = float(input("ST Depression Induced by Exercise: "))
+    slope = int(input("Slope of Peak Exercise ST Segment (1-3): "))
+
+    # Convert input into a DataFrame
+    patient_data = np.array([[age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope]])
+    patient_data = scaler.transform(patient_data)  # Scale input data
+
+    # Predict heart disease
+    prediction = model.predict(patient_data)
+    result = "Heart Disease Detected" if prediction[0] == 1 else "Normal Heart Condition"
+    print("\nPrediction:", result)
+
+# Run the prediction function
+predict_heart_disease()
