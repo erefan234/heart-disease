@@ -1,0 +1,91 @@
+import pandas as pd
+import numpy as np
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+# Load dataset (Replace 'lung_cancer.csv' with your actual dataset file)
+data = pd.read_csv(r"C:\Users\erefa\OneDrive\Desktop\lung_cancer\Lung Cancer\dataset_med.csv")
+
+# Display first few rows of the dataset
+print("Dataset Preview:\n", data.head())
+
+# Drop unnecessary columns (ID and dates)
+data = data.drop(columns=['id', 'diagnosis_date', 'end_treatment_date'])
+
+# Convert categorical features into numerical values using Label Encoding
+categorical_columns = ['gender', 'country', 'cancer_stage', 'family_history', 
+                       'smoking_status', 'hypertension', 'asthma', 'cirrhosis', 
+                       'other_cancer', 'treatment_type', 'survived']
+
+label_encoders = {}
+for col in categorical_columns:
+    label_encoders[col] = LabelEncoder()
+    data[col] = label_encoders[col].fit_transform(data[col])
+
+# Define features and target variable
+X = data.drop(columns=['survived'])  # Features (independent variables)
+y = data['survived']  # Target (0 = Died, 1 = Survived)
+
+# Split data into training and testing sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale the numerical features
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Train a Random Forest model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Evaluate the model
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Save the trained model and encoders for future predictions
+joblib.dump(model, "lung_cancer_model.pkl")
+joblib.dump(scaler, "scaler.pkl")
+joblib.dump(label_encoders, "label_encoders.pkl")
+
+# Function to take user input and predict lung cancer survival
+def predict_survival():
+    print("\nEnter Patient Details:")
+    age = float(input("Age: "))
+    gender = input("Gender (male/female): ")
+    country = input("Country: ")
+    cancer_stage = input("Cancer Stage (Stage I, Stage II, Stage III, Stage IV): ")
+    family_history = input("Family History (yes/no): ")
+    smoking_status = input("Smoking Status (current smoker/former smoker/never smoked/passive smoker): ")
+    bmi = float(input("BMI: "))
+    cholesterol_level = float(input("Cholesterol Level: "))
+    hypertension = input("Hypertension (yes/no): ")
+    asthma = input("Asthma (yes/no): ")
+    cirrhosis = input("Cirrhosis (yes/no): ")
+    other_cancer = input("Other Cancer (yes/no): ")
+    treatment_type = input("Treatment Type (surgery/chemotherapy/radiation/combined): ")
+
+    # Convert inputs into a DataFrame
+    input_data = pd.DataFrame([[age, gender, country, cancer_stage, family_history,
+                                smoking_status, bmi, cholesterol_level, hypertension,
+                                asthma, cirrhosis, other_cancer, treatment_type]],
+                              columns=X.columns)
+
+    # Encode categorical features using saved label encoders
+    for col in categorical_columns:
+        if col in input_data.columns:
+            input_data[col] = label_encoders[col].transform([input_data[col][0]])
+
+    # Scale input data
+    input_data = scaler.transform(input_data)
+
+    # Predict survival
+    prediction = model.predict(input_data)
+    result = "Survived" if prediction[0] == 1 else "Not Survived"
+    print("\nPrediction:", result)
+
+# Run the prediction function
+predict_survival()
