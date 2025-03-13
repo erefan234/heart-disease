@@ -1,0 +1,79 @@
+import pandas as pd
+import numpy as np
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+# Load dataset (Replace 'mobile_data.csv' with the actual dataset file)
+data = pd.read_csv(r"C:\Users\erefa\OneDrive\Desktop\mobile_phone_pricing\Mobile Phone Pricing\dataset.csv")
+
+# Display first few rows of the dataset
+print("Dataset Preview:\n", data.head())
+
+# Define features and target variable
+X = data.drop(columns=['price_range'])  # Features (independent variables)
+y = data['price_range']  # Target (0 = low, 1 = medium, 2 = high, 3 = very high)
+
+# Split data into training and testing sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale the numerical features for better accuracy
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Train a Random Forest model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Evaluate the model
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy:.2f}")
+
+# Save the trained model and scaler for future use
+joblib.dump(model, "mobile_price_model.pkl")
+joblib.dump(scaler, "scaler.pkl")
+
+# Function to predict mobile phone pricing
+def predict_price():
+    print("\nEnter Mobile Specifications:")
+    battery_power = float(input("Battery Power (mAh): "))
+    blue = int(input("Bluetooth (0 = No, 1 = Yes): "))
+    clock_speed = float(input("Processor Speed (GHz): "))
+    dual_sim = int(input("Dual SIM (0 = No, 1 = Yes): "))
+    fc = float(input("Front Camera (MP): "))
+    four_g = int(input("4G Support (0 = No, 1 = Yes): "))
+    int_memory = float(input("Internal Memory (GB): "))
+    m_deep = float(input("Mobile Depth (cm): "))
+    mobile_wt = float(input("Mobile Weight (g): "))
+    n_cores = int(input("Number of Processor Cores: "))
+    pc = float(input("Primary Camera (MP): "))
+    px_height = float(input("Pixel Resolution Height: "))
+    px_width = float(input("Pixel Resolution Width: "))
+    ram = float(input("RAM (MB): "))
+    sc_h = float(input("Screen Height (cm): "))
+    sc_w = float(input("Screen Width (cm): "))
+    talk_time = float(input("Battery Talk Time (hours): "))
+    three_g = int(input("3G Support (0 = No, 1 = Yes): "))
+    touch_screen = int(input("Touch Screen (0 = No, 1 = Yes): "))
+    wifi = int(input("WiFi Support (0 = No, 1 = Yes): "))
+
+    # Convert inputs into a DataFrame
+    input_data = np.array([[battery_power, blue, clock_speed, dual_sim, fc, four_g, int_memory, 
+                            m_deep, mobile_wt, n_cores, pc, px_height, px_width, ram, 
+                            sc_h, sc_w, talk_time, three_g, touch_screen, wifi]])
+
+    input_data = scaler.transform(input_data)  # Scale input data
+
+    # Predict price range
+    prediction = model.predict(input_data)
+    price_labels = ["Low Cost", "Medium Cost", "High Cost", "Very High Cost"]
+    result = price_labels[prediction[0]]
+
+    print("\nPredicted Price Range:", result)
+
+# Run the prediction function
+predict_price()
